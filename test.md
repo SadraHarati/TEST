@@ -25,17 +25,11 @@
 ابزار های مورد نیاز را ایمپورت میکنیم و سپس محتوای کتاب را میخوانیم :
 
     import tensorflow as tf
-    
     import keras
-    
     from keras.layers import  Input, LSTM, Dense
-    
     import tensorflow.keras.optimizers as optimizers
-    
     import numpy as np
-    
     import random
-    
     
     text = open(&quothafez.txt&quot, &quotr&quot, encoding=&quotutf-8&quot).read()
 
@@ -46,3 +40,20 @@
     chars = sorted(list(set(text)))
     char_indices = dict((c, i) for i, c in enumerate(chars))
     indices_char = dict((i, c) for i, c in enumerate(chars))
+برای تولید متن مدل با دیدن کارکتر های قبل یاد میگیرد که کارکتر بعدی کدام است :
+
+پس با توجه به تصویر بالا، input ها یک ایندکس از آخر عقب تر از target ها هستند و target ها نیز یک ایندکس از اول جلوتر از input ها هستند، پس به این شیوه متغییر های x و y رو میسازیم:
+
+    maxlen = 40
+    step = 3
+    sentences = []
+    next_chars = []
+    for i in range(0, len(text) - maxlen, step):
+        sentences.append(text[i : i + maxlen])
+        next_chars.append(text[i + maxlen])
+    x = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
+    y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
+    for i, sentence in enumerate(sentences):
+        for t, char in enumerate(sentence):
+            x[i, t, char_indices[char]] = 1
+        y[i, char_indices[next_chars[i]]] = 1
