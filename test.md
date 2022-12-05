@@ -18,17 +18,31 @@
 >pip install -U tensorflow-gpu
 >
 >pip install -U numpy
+
 ما از دیوان حافظ استفاده میکنیم اما میتوانید برای دقت بیشتر از اشعار سعدی یا فردوسی استفاده کنید(یا هرنوع متن بالای 100 هزار کارکتر)، اشعار حافظ را با دستور زیر دریافت میکنیم :
   wget -O hafez.txt https://raw.githubusercontent.com/amnghd/Persian_poems_corpus/master/normalized/hafez_norm.txt
 
 ابزار های مورد نیاز را ایمپورت میکنیم و سپس محتوای کتاب را میخوانیم :
 
-  import tensorflow as tf
-  import keras
-  from keras.layers import  Input, LSTM, Dense
-  import tensorflow.keras.optimizers as optimizers
-  import numpy as np
-  import random
-  
-  text = open(&quothafez.txt&quot, &quotr&quot, encoding=&quotutf-8&quot).read()
+    import tensorflow as tf
+    
+    import keras
+    
+    from keras.layers import  Input, LSTM, Dense
+    
+    import tensorflow.keras.optimizers as optimizers
+    
+    import numpy as np
+    
+    import random
+    
+    
+    text = open(&quothafez.txt&quot, &quotr&quot, encoding=&quotutf-8&quot).read()
 
+<h1>پردازش متن و ایجاد دیتاست</h1>
+
+شبکه عصبی نمیتواند داده ها به صورت متنی دریافت کند، برای همین باید کارکتر ها را به اعداد صحیح تبدیل کنیم :
+
+    chars = sorted(list(set(text)))
+    char_indices = dict((c, i) for i, c in enumerate(chars))
+    indices_char = dict((i, c) for i, c in enumerate(chars))
