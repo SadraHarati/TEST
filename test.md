@@ -57,3 +57,88 @@
         for t, char in enumerate(sentence):
             x[i, t, char_indices[char]] = 1
         y[i, char_indices[next_chars[i]]] = 1
+<h1>مدل سازی</h1>
+حالا میتوانیم مدل LSTM خود را تعریف کنیم. در اینجا از یک لایه LSTM با 128 واحد حافظه به عنوان حافظه پنهان و لایه خروجی یک Dense layer هست که از تابع softmax استفاده میکند، برای بهینه ساز هم از Adam استفاده میکنیم :
+
+    model = keras.Sequential(
+        [
+            keras.Input(shape=(maxlen, len(chars))),
+            layers.LSTM(128),
+            layers.Dense(len(chars), activation=&quotsoftmax&quot),
+        ]
+    )
+    optimizer = optimizers.Adam(learning_rate=0.01)
+    model.compile(loss=&quotcategorical_crossentropy&quot, optimizer=optimizer)
+به دلیل اینکه مدل برای پیش‌بینی کارکتر بعدی، احتمال هر کارکتر را برمیگرداند، یک تابع برای text sampling نیاز خواهیم داشت :
+
+    def sample(preds, temperature=1.0):
+        # helper function to sample an index from a probability array
+        preds = np.asarray(preds).astype(&quotfloat64&quot)
+        preds = np.log(preds) / temperature
+        exp_preds = np.exp(preds)
+        preds = exp_preds / np.sum(exp_preds)
+        probas = np.random.multinomial(1, preds, 1)
+        return np.argmax(probas)
+و در آخر آموزش مدل را آموزش میدهیم :
+
+    epochs = 40
+    batch_size = 128
+    
+    model.fit(x, y, batch_size=batch_size, epochs=40)
+آموزش مدل روی NVIDIA Tesla K50 حدود دو دقیقه طول کشید. حالا میتوانیم مدل را تست کنیم :
+
+    for i in range(10):
+        start_index = random.randint(0, len(text) - maxlen - 1)
+        for diversity in [0.2, 0.5, 1.0, 1.2]:
+            print(&quot...Diversity:&quot, diversity)
+    
+            generated = &quot&quot
+            sentence = text[start_index : start_index + maxlen]
+            print('...Generating with seed: &quot' + sentence + '&quot')
+    
+            for i in range(400):
+                x_pred = np.zeros((1, maxlen, len(chars)))
+                for t, char in enumerate(sentence):
+                    x_pred[0, t, char_indices[char]] = 1.0
+                preds = model.predict(x_pred, verbose=0)[0]
+                next_index = sample(preds, diversity)
+                next_char = indices_char[next_index]
+                sentence = sentence[1:] + next_char
+                generated += next_char
+    
+            print(&quot...Generated: &quot, generated)
+            print()
+با اجرای کد، ده متن با diversity های مختلف تولید میشود :
+
+متن ورودی به صورت تصادفی از خود متن اصلی انتخاب میشود اما شما میتوانید متن خود را به مدل بدهید.
+
+<h1>بررسی اشعار تولید شده</h1>
+>به خاک نشینی که بر سر خود از در آن چه اند
+
+>گر چه ما به دست است و دل بر این خواهد شد
+
+
+>ما نگه از دوست ما به در میان بود
+
+>به رخسان من و ماه می و مهر ما را
+
+
+>هر که به یاد به باد صبا به میان بود
+
+>به خون می کن که زیرکش که من می برد از او
+
+
+>که در دل از او تو به ملامت می برد
+
+>تو به پیش کام دل ما نازک سخن بده
+
+
+>از لب گل صفیه و دارد سحر پرده کنم
+
+>حافظ ار خاطر و خال ما و ز بر بخت نیک
+
+<h1>بهبود مدل</h1>
+برای بهبود نتایج مدل چند کار میشه انجام داد :
+
+1. استفاده از مدل پیچیده تر(در اینجا ما فقط از یک لایه LSTM آنهم با 128 واحد حافظه استفاده کرده ایم، استفاده از LSTM های بیشتر و لایه Dropout نتیجه را بهبود میبخشد).
+2. متن بهتر(متنی که استفاده کردیم حدود 300 هزار کارکتر داشت، توصیه میشه برای داشتن مدل بهتر از متنی با بیش از یک میلیون کارکتر استفاده شود).
